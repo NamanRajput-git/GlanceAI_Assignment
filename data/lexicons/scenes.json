@@ -1,0 +1,8 @@
+{
+  "office": ["office", "conference room", "cubicle", "desk", "workplace"],
+  "park": ["park", "botanical garden", "picnic area", "outdoors", "nature", "forest", "field"],
+  "street": ["street", "crosswalk", "plaza", "sidewalk", "city", "urban", "road", "alley"],
+  "home": ["living room", "bedroom", "home office", "kitchen", "indoor", "house", "apartment"],
+  "beach": ["beach", "sand", "ocean", "sea", "coast"],
+  "unknown": ["unknown", "studio", "white background", "isolated"]
+}
