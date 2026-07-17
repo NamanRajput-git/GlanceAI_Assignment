@@ -13,49 +13,67 @@ It does not rely on simple, monolithic embeddings that struggle with composition
 The following diagram illustrates how raw images and user text queries are processed and mathematically compared.
 
 ```mermaid
-graph TD
-    %% Indexing Pipeline
-    subgraph Indexing Pipeline
-        img[Raw Image] --> owl[OWL-ViT Object Detection]
-        owl --> crops[Garment Bounding Boxes]
+flowchart TD
+    classDef input fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+    classDef model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef db fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef engine fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    subgraph Indexing ["⚙️ 1. Indexing Pipeline (Offline)"]
+        direction TB
+        I_Img(["🖼️ Raw Image"]):::input
         
-        crops --> fclip[FashionCLIP Attribute Classification]
-        crops --> hsv[HSV Color Verification]
+        I_OWL["🦉 OWL-ViT<br/>(Object Detection)"]:::model
+        I_CLIP["👗 FashionCLIP + HSV<br/>(Attribute Classification)"]:::model
+        I_CTX["🏙️ ResNet50 + BLIP<br/>(Context & Scene)"]:::model
         
-        fclip --> garment_metadata[Garment Schema<br/>Type, Color, Pattern]
-        hsv --> garment_metadata
+        I_Img --> I_OWL
+        I_OWL -- Garment Crops --> I_CLIP
+        I_Img --> I_CTX
         
-        img --> resnet[ResNet50 Places365]
-        img --> blip[BLIP VLM Captioning]
+        I_Schema>["📄 Unified JSON Schema<br/>(Garments + Context)"]:::input
         
-        resnet --> global_metadata[Global Schema<br/>Scene, Style, Activity, Materials]
-        blip --> global_metadata
+        I_CLIP --> I_Schema
+        I_CTX --> I_Schema
         
-        garment_metadata --> merge[Merge into JSON Schema]
-        global_metadata --> merge
+        I_TxtEnc["🧠 SentenceTransformer"]:::model
+        I_ImgEnc["👁️ CLIP Encoder"]:::model
         
-        merge --> txt_encode[Dense Sentence Encoding]
-        txt_encode --> chroma[(ChromaDB Vector Store)]
-        img --> img_encode[CLIP Image Encoding]
-        img_encode --> chroma
+        I_Schema --> I_TxtEnc
+        I_Img --> I_ImgEnc
+        
+        I_DB[("🗄️ ChromaDB Vector Store")]:::db
+        
+        I_TxtEnc --> I_DB
+        I_ImgEnc --> I_DB
     end
 
-    %% Retrieval Pipeline
-    subgraph Retrieval Pipeline
-        query[User Text Query] --> qp[Lexicon Query Parser]
-        qp --> query_slots[Parsed Slots<br/>Garments, Scene, Style]
+    subgraph Retrieval ["🔍 2. Retrieval Pipeline (Online)"]
+        direction TB
+        R_Query(["💬 User Text Query"]):::input
         
-        query --> embed_txt[SentenceTransformer]
-        query --> embed_img[CLIP Text Encoder]
+        R_NLP["📝 Lexicon Parser"]:::model
+        R_TxtEnc["🧠 SentenceTransformer"]:::model
+        R_ImgEnc["👁️ CLIP Encoder"]:::model
         
-        embed_txt --> chroma_search[Dense Top-K Search]
-        chroma_search --> candidates[Candidate Images & Metadata]
+        R_Query --> R_NLP
+        R_Query --> R_TxtEnc
+        R_Query --> R_ImgEnc
         
-        candidates --> blended_scorer[Blended Scoring Engine]
-        query_slots --> blended_scorer
-        embed_img --> blended_scorer
+        R_Slots>["🎯 Parsed Slots<br/>(Type, Color, Scene)"]:::input
+        R_NLP --> R_Slots
         
-        blended_scorer --> ranked[Final Ranked Results]
+        R_Search[("🗄️ ChromaDB Search")]:::db
+        R_TxtEnc -- Top-K Search --> R_Search
+        
+        R_Score{"⚡ Blended Scoring Engine<br/>(Math & Penalties)"}:::engine
+        
+        R_Search -- Candidates --> R_Score
+        R_Slots -- Attribute Match --> R_Score
+        R_ImgEnc -- Visual Sim --> R_Score
+        
+        R_Final(["🏆 Final Ranked Results"]):::input
+        R_Score --> R_Final
     end
 ```
 
