@@ -8,6 +8,14 @@ It does not rely on simple, monolithic embeddings that struggle with composition
 
 ---
 
+## Demo
+
+![Demo Screenshot 1](assets/screenshot_1.png)
+![Demo Screenshot 2](assets/screenshot_2.png)
+![Demo Screenshot 3](assets/screenshot_3.png)
+
+---
+
 ## Architecture Flow
 
 The following diagram illustrates how raw images and user text queries are processed and mathematically compared.
