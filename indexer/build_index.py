@@ -10,7 +10,7 @@ from indexer.vector_store import VectorStore
 
 def build_index():
     print("Loading datasets...")
-    records = load_fashion_dataset(num_samples=1000) # Increased to 1000 images
+    records = load_fashion_dataset(num_samples=1000) 
     records.extend(get_supplementary_images("data/images"))
     
     if not records:

@@ -10,54 +10,27 @@ It does not rely on simple, monolithic embeddings that struggle with composition
 
 ## Architecture Flow
 
-The following diagram illustrates how raw images and user text queries are processed and mathematically compared.
+**1. Indexing Pipeline**
+* **Raw Image**
+  * ├── **OWL-ViT Object Detection** 
+  * │   └── Garment Bounding Boxes
+  * │       ├── FashionCLIP Attribute Classification -> Garment Schema (Type, Pattern)
+  * │       └── HSV Color Verification -> Garment Schema (Color)
+  * ├── **ResNet50 Places365** -> Global Schema (Scene)
+  * └── **BLIP VLM Captioning** -> Global Schema (Style, Activity, Materials)
+* **Merge into JSON Schema**
+  * ├── Dense Sentence Encoding (SentenceTransformer) -> ChromaDB
+  * └── CLIP Image Encoding -> ChromaDB
 
-```mermaid
-graph TD
-    %% Indexing Pipeline
-    subgraph Indexing Pipeline
-        img[Raw Image] --> owl[OWL-ViT Object Detection]
-        owl --> crops[Garment Bounding Boxes]
-        
-        crops --> fclip[FashionCLIP Attribute Classification]
-        crops --> hsv[HSV Color Verification]
-        
-        fclip --> garment_metadata[Garment Schema<br/>Type, Color, Pattern]
-        hsv --> garment_metadata
-        
-        img --> resnet[ResNet50 Places365]
-        img --> blip[BLIP VLM Captioning]
-        
-        resnet --> global_metadata[Global Schema<br/>Scene, Style, Activity, Materials]
-        blip --> global_metadata
-        
-        garment_metadata --> merge[Merge into JSON Schema]
-        global_metadata --> merge
-        
-        merge --> txt_encode[Dense Sentence Encoding]
-        txt_encode --> chroma[(ChromaDB Vector Store)]
-        img --> img_encode[CLIP Image Encoding]
-        img_encode --> chroma
-    end
-
-    %% Retrieval Pipeline
-    subgraph Retrieval Pipeline
-        query[User Text Query] --> qp[Lexicon Query Parser]
-        qp --> query_slots[Parsed Slots<br/>Garments, Scene, Style]
-        
-        query --> embed_txt[SentenceTransformer]
-        query --> embed_img[CLIP Text Encoder]
-        
-        embed_txt --> chroma_search[Dense Top-K Search]
-        chroma_search --> candidates[Candidate Images & Metadata]
-        
-        candidates --> blended_scorer[Blended Scoring Engine]
-        query_slots --> blended_scorer
-        embed_img --> blended_scorer
-        
-        blended_scorer --> ranked[Final Ranked Results]
-    end
-```
+**2. Retrieval Pipeline**
+* **User Text Query**
+  * ├── **Lexicon Query Parser** -> Parsed Slots (Garments, Scene, Style)
+  * ├── **SentenceTransformer** -> Text Embedding -> Dense Top-K Search -> Candidate Images
+  * └── **CLIP Text Encoder** -> Image Embedding
+* **Blended Scoring Engine**
+  * ├── Evaluates Candidate Images
+  * ├── Applies Parsed Slots & Confidence Math
+  * └── Calculates Final Ranked Results
 
 ---
 
