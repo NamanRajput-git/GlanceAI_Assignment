@@ -93,6 +93,25 @@ The pipeline orchestrates several specialized machine learning models to maximiz
 
 ---
 
+## Pipeline Documentation
+
+The codebase is strictly separated into two distinct workflows to ensure modularity between data ingestion and search logic.
+
+### Part A: The Indexer (`/indexer`)
+**Goal:** Process raw unstructured images into a highly searchable, structured format.
+1. **Garment Detection (`detect.py`):** Uses OWL-ViT to draw bounding boxes around fashion items, separating the subject from the background.
+2. **Attribute Classification (`attribute_classify.py`):** Passes the cropped bounding boxes to FashionCLIP to determine the exact pattern (e.g., striped, solid) and garment type. A deterministic OpenCV script verifies the physical pixel colors via HSV histograms to prevent AI hallucination.
+3. **Contextual Analysis (`scene_classify.py` & `structured_caption.py`):** ResNet50 identifies the background environment (e.g., park, office), while BLIP captions the image to extract the human's activity and overarching style.
+4. **Schema Merging & Storage (`merge_schema.py` & `vector_store.py`):** All extracted metadata is merged into a single JSON schema. This schema is embedded using SentenceTransformers into a dense semantic vector and saved to ChromaDB.
+
+### Part B: The Retriever (`/retriever`)
+**Goal:** Accept natural language strings and return the top matching images using context-aware heuristics.
+1. **Query Parsing (`query_parser.py`):** The user's unstructured string (e.g., *"red shirt walking in a park"*) is processed through custom JSON lexicons to extract distinct attribute slots (Garment=Shirt, Color=Red, Scene=Park, Activity=Walking).
+2. **Dense Vector Search (`search.py`):** The raw text is embedded and passed to ChromaDB to retrieve the Top-50 closest matching images instantly using HNSW graph algorithms.
+3. **Mathematical Re-Ranking (`search.py`):** The candidate images are evaluated against the parsed query slots using a custom Blended Scoring Engine, which prioritizes explicit multi-attribute matches over generic semantic similarity.
+
+---
+
 ## Ranking & Scoring Strategy
 
 The retrieval engine uses a mathematical **Blended Scoring Function** to rank candidate images. The final score is a weighted sum of four distinct components:
