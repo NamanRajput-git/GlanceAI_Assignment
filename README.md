@@ -19,60 +19,60 @@ flowchart TD
     classDef db fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
     classDef engine fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    subgraph Indexing ["⚙️ 1. Indexing Pipeline (Offline)"]
+    subgraph Indexing [1. Indexing Pipeline]
         direction TB
-        I_Img(["🖼️ Raw Image"]):::input
+        I_Img([Raw Image]):::input
         
-        I_OWL["🦉 OWL-ViT<br/>(Object Detection)"]:::model
-        I_CLIP["👗 FashionCLIP + HSV<br/>(Attribute Classification)"]:::model
-        I_CTX["🏙️ ResNet50 + BLIP<br/>(Context & Scene)"]:::model
+        I_OWL[OWL-ViT<br/>Object Detection]:::model
+        I_CLIP[FashionCLIP + HSV<br/>Attribute Classification]:::model
+        I_CTX[ResNet50 + BLIP<br/>Context & Scene]:::model
         
         I_Img --> I_OWL
         I_OWL -- Garment Crops --> I_CLIP
         I_Img --> I_CTX
         
-        I_Schema>["📄 Unified JSON Schema<br/>(Garments + Context)"]:::input
+        I_Schema([Unified JSON Schema<br/>Garments + Context]):::input
         
         I_CLIP --> I_Schema
         I_CTX --> I_Schema
         
-        I_TxtEnc["🧠 SentenceTransformer"]:::model
-        I_ImgEnc["👁️ CLIP Encoder"]:::model
+        I_TxtEnc[SentenceTransformer]:::model
+        I_ImgEnc[CLIP Encoder]:::model
         
         I_Schema --> I_TxtEnc
         I_Img --> I_ImgEnc
         
-        I_DB[("🗄️ ChromaDB Vector Store")]:::db
+        I_DB[(ChromaDB Vector Store)]:::db
         
         I_TxtEnc --> I_DB
         I_ImgEnc --> I_DB
     end
 
-    subgraph Retrieval ["🔍 2. Retrieval Pipeline (Online)"]
+    subgraph Retrieval [2. Retrieval Pipeline]
         direction TB
-        R_Query(["💬 User Text Query"]):::input
+        R_Query([User Text Query]):::input
         
-        R_NLP["📝 Lexicon Parser"]:::model
-        R_TxtEnc["🧠 SentenceTransformer"]:::model
-        R_ImgEnc["👁️ CLIP Encoder"]:::model
+        R_NLP[Lexicon Parser]:::model
+        R_TxtEnc[SentenceTransformer]:::model
+        R_ImgEnc[CLIP Encoder]:::model
         
         R_Query --> R_NLP
         R_Query --> R_TxtEnc
         R_Query --> R_ImgEnc
         
-        R_Slots>["🎯 Parsed Slots<br/>(Type, Color, Scene)"]:::input
+        R_Slots([Parsed Slots<br/>Type, Color, Scene]):::input
         R_NLP --> R_Slots
         
-        R_Search[("🗄️ ChromaDB Search")]:::db
+        R_Search[(ChromaDB Search)]:::db
         R_TxtEnc -- Top-K Search --> R_Search
         
-        R_Score{"⚡ Blended Scoring Engine<br/>(Math & Penalties)"}:::engine
+        R_Score{Blended Scoring Engine<br/>Math & Penalties}:::engine
         
         R_Search -- Candidates --> R_Score
         R_Slots -- Attribute Match --> R_Score
         R_ImgEnc -- Visual Sim --> R_Score
         
-        R_Final(["🏆 Final Ranked Results"]):::input
+        R_Final([Final Ranked Results]):::input
         R_Score --> R_Final
     end
 ```
